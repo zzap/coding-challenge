@@ -106,12 +106,11 @@ class Block {
                 'tag'  => 'foo',
                 'category_name'  => 'baz',
 				  'post__not_in' => [ get_the_ID() ],
-				  'meta_value' => 'Accepted',
 			));
 
 			if ( $query->found_posts ) :
 				?>
-				 <h2>Any 5 posts with the tag of foo and the category of baz</h2>
+				 <h2>5 posts with the tag of foo and the category of baz</h2>
                 <ul>
                 <?php
 
