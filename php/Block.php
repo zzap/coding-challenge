@@ -112,7 +112,7 @@ class Block {
 			<?php
 			$query = new WP_Query( array(
 				'post_type'              => array( 'post', 'page' ),
-				'posts_per_page'         => 10,
+				'posts_per_page'         => 5 + count( $exclude ),
 				'post_status'            => 'any',
 				'no_found_rows'          => true,
 				'update_post_meta_cache' => false,
