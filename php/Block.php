@@ -135,15 +135,13 @@ class Block {
 				<h2><?php esc_html_e( 'Any 5 posts with the tag of foo and the category of baz', 'site-counts' ); ?></h2>
 				<ul>
 				<?php
-				$posts = 0;
-				while ( $query->have_posts() && $posts < 5 ) :
+				while ( $query->have_posts() ) :
 					$query->the_post();
 					$current = get_the_ID();
 					if ( in_array( $current, $exclude ) ) {
 						continue;
 					}
 					if ( has_tag( 'foo', $current ) && has_category( 'baz', $current ) ) :
-						$posts++;
 						the_title( '<li>', '</li>' );
 					endif;
 				endwhile;
