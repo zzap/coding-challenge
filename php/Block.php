@@ -138,7 +138,7 @@ class Block {
 				while ( $query->have_posts() ) :
 					$query->the_post();
 					$current = get_the_ID();
-					if ( in_array( $current, $exclude ) ) {
+					if ( in_array( $current, $exclude, true ) ) {
 						continue;
 					}
 					if ( has_tag( 'foo', $current ) && has_category( 'baz', $current ) ) :
