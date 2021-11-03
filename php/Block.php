@@ -63,6 +63,7 @@ class Block {
 	 * @return string The markup of the block.
 	 */
 	public function render_callback( $attributes, $content, $block ) {
+		$exclude = array( get_the_ID() );
 		$class_name = '';
 		$post_types = get_post_types( array( 'public' => true ) );
 		if ( isset( $attributes['className'] ) && ! empty( $attributes['className'] ) ) :
@@ -110,13 +111,14 @@ class Block {
 
 			<?php
 			$query = new WP_Query( array(
-				'post_type'      => array( 'post', 'page' ),
-				'posts_per_page' => 5,
-				'post_status'    => 'any',
-				'tag'            => 'foo',
-				'category_name'  => 'baz',
-				'post__not_in'   => array( get_the_ID() ),
-				'date_query'     => array(
+				'post_type'              => array( 'post', 'page' ),
+				'posts_per_page'         => 10,
+				'post_status'            => 'any',
+				'no_found_rows'          => true,
+				'update_post_meta_cache' => false,
+				'update_post_term_cache' => false,
+				'fields'                 => 'ids',
+				'date_query'             => array(
 					array(
 						'hour'      => 9,
 						'compare'   => '>=',
@@ -133,8 +135,17 @@ class Block {
 				<h2><?php esc_html_e( 'Any 5 posts with the tag of foo and the category of baz', 'site-counts' ); ?></h2>
 				<ul>
 				<?php
-				while ( $query->have_posts() ) : $query->the_post();
-					the_title( '<li>', '</li>' );
+				$posts = 0;
+				while ( $query->have_posts() && $posts < 5 ) :
+					$query->the_post();
+					$current = get_the_ID();
+					if ( in_array( $current, $exclude ) ) {
+						continue;
+					}
+					if ( has_tag( 'foo', $current ) && has_category( 'baz', $current ) ) :
+						$posts++;
+						the_title( '<li>', '</li>' );
+					endif;
 				endwhile;
 				wp_reset_postdata();
 				?>
