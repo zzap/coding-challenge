@@ -63,37 +63,62 @@ class Block {
 	 * @return string The markup of the block.
 	 */
 	public function render_callback( $attributes, $content, $block ) {
-		$post_types = get_post_types(  [ 'public' => true ] );
-		$class_name = $attributes['className'];
-		ob_start();
+		$exclude = array( get_the_ID() );
+		$class_name = '';
+		$post_types = get_post_types( array( 'public' => true ) );
+		if ( isset( $attributes['className'] ) && ! empty( $attributes['className'] ) ) :
+			$class_name = $attributes['className'];
+		endif;
 
+		ob_start();
 		?>
-        <div class="<?php echo $class_name; ?>">
-			<h2>Post Counts</h2>
+		<div <?php echo $class_name ? 'class="' . esc_attr( $class_name ) . '"' : ''; ?>>
+			<h2><?php esc_html_e( 'Post Counts', 'site-counts' ); ?></h2>
+			<?php if ( is_array( $post_types ) ) : ?>
 			<ul>
 			<?php
 			foreach ( $post_types as $post_type_slug ) :
-                $post_type_object = get_post_type_object( $post_type_slug  );
-                $post_count = count(
-                    get_posts(
-						[
-							'post_type' => $post_type_slug,
-							'posts_per_page' => -1,
-						]
-					)
-                );
+				$post_type_object  = get_post_type_object( $post_type_slug  );
+				$post_count_object = wp_count_posts( $post_type_slug );
 
+				if ( 'attachment' === $post_type_slug ) :
+					$post_count = $post_count_object->inherit;
+				else :
+					$post_count = $post_count_object->publish;
+				endif;
 				?>
-				<li><?php echo 'There are ' . $post_count . ' ' .
-					  $post_type_object->labels->name . '.'; ?></li>
-			<?php endforeach;	?>
-			</ul><p><?php echo 'The current post ID is ' . $_GET['post_id'] . '.'; ?></p>
+				<li>
+				<?php
+				printf(
+					/* translators: %1$s: Post count number, %2$s: Post type singular name, %3$s: Post type plural name. */
+					esc_html( _nx( 'There is %1$s %2$s.', 'There are %1$s %3$s.', $post_count, 'Post Count List Item', 'site-counts' ) ),
+					esc_html( number_format_i18n( $post_count ) ),
+					$post_type_object->labels->singular_name,
+					$post_type_object->labels->name
+				);
+				?>
+				</li>
+			<?php endforeach; // $post_types as $post_type_slug ?>
+			</ul>
+			<?php endif; // is_array( $post_types ) ?>
+
+			<p>
+			<?php printf(
+				/* translators: %s: Current Post ID. */
+				esc_html__( 'The current post ID is %s.', 'site-counts' ),  get_the_ID()
+			); ?>
+			</p>
 
 			<?php
-			$query = new WP_Query(  array(
-				'post_type' => ['post', 'page'],
-				'post_status' => 'any',
-				'date_query' => array(
+			$query = new WP_Query( array(
+				'post_type'              => array( 'post', 'page' ),
+				'posts_per_page'         => 5 + count( $exclude ),
+				'post_status'            => 'any',
+				'no_found_rows'          => true,
+				'update_post_meta_cache' => false,
+				'update_post_term_cache' => false,
+				'fields'                 => 'ids',
+				'date_query'             => array(
 					array(
 						'hour'      => 9,
 						'compare'   => '>=',
@@ -103,24 +128,27 @@ class Block {
 						'compare'=> '<=',
 					),
 				),
-                'tag'  => 'foo',
-                'category_name'  => 'baz',
-				  'post__not_in' => [ get_the_ID() ],
-				  'meta_value' => 'Accepted',
-			));
+			) );
 
-			if ( $query->found_posts ) :
+			if ( $query->have_posts() ) :
+			?>
+				<h2><?php esc_html_e( 'Any 5 posts with the tag of foo and the category of baz', 'site-counts' ); ?></h2>
+				<ul>
+				<?php
+				while ( $query->have_posts() ) :
+					$query->the_post();
+					$current = get_the_ID();
+					if ( in_array( $current, $exclude, true ) ) {
+						continue;
+					}
+					if ( has_tag( 'foo', $current ) && has_category( 'baz', $current ) ) :
+						the_title( '<li>', '</li>' );
+					endif;
+				endwhile;
+				wp_reset_postdata();
 				?>
-				 <h2>Any 5 posts with the tag of foo and the category of baz</h2>
-                <ul>
-                <?php
-
-                 foreach ( array_slice( $query->posts, 0, 5 ) as $post ) :
-                    ?><li><?php echo $post->post_title ?></li><?php
-				endforeach;
-			endif;
-		 	?>
-			</ul>
+				</ul>
+			<?php endif; // $query->have_posts() ?>
 		</div>
 		<?php
 
